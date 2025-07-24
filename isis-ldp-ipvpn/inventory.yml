@@ -1,0 +1,57 @@
+---
+all:
+  children:
+    FABRIC:
+      children:
+        WAN1:
+          children:
+            WAN1_P_ROUTERS:
+              hosts:
+                p1:
+                  ansible_host: 172.16.1.11
+                p2:
+                  ansible_host: 172.16.1.12
+                p3:
+                  ansible_host: 172.16.1.13
+                p4:
+                  ansible_host: 172.16.1.14
+            WAN1_PE_ROUTERS:
+              hosts:
+                pe1:
+                  ansible_host: 172.16.1.101
+                pe2:
+                  ansible_host: 172.16.1.102
+                pe3:
+                  ansible_host: 172.16.1.103
+            WAN1_RR_ROUTERS:
+              hosts:
+                rr1:
+                  ansible_host: 172.16.1.151
+                rr2:
+                  ansible_host: 172.16.1.152
+        SIMULATION:
+            hosts:
+              Container_LAB:
+                ansible_host: 168.220.177.163
+                ansible_port: 2222
+                ansible_user: afnlab
+                ansible_host_key_checking: false
+                ansible_ssh_pass: W3lcome2MyLabSezDexter2025!
+                ansible_become_password: W3lcome2MyLabSezDexter2025!
+                ansible_connection: ssh
+                ansible_become: true
+                ansible_become_method: sudo
+            vars:
+                sim_env: clab
+                containerlab_deploy_on_hosts: true
+                sim_ceos_version: ceos:4.32.6.1M
+                containerlab_mode: container
+                containerlab_labname: CPE_VXLAN
+                sim_topology_file_name: CPE-VXLAN_LAB
+                containerlab_mgmt_network_name: containerlab_mgmt
+                containerlab_mgmt_network: 10.25.99.0/24
+                containerlab_vxlan_base: 200 
+        NETWORK_SERVICES:
+          children:
+            WAN1_PE_ROUTERS:
+
