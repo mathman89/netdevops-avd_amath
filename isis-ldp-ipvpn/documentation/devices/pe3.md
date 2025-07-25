@@ -26,7 +26,6 @@
   - [IP Routing](#ip-routing)
   - [IPv6 Routing](#ipv6-routing)
   - [Static Routes](#static-routes)
-  - [Router OSPF](#router-ospf)
   - [Router ISIS](#router-isis)
   - [Router BGP](#router-bgp)
 - [BFD](#bfd)
@@ -181,9 +180,7 @@ vlan internal order ascending range 1006 1199
 | Interface | Description | Channel Group | IP Address | VRF |  MTU | Shutdown | ACL In | ACL Out |
 | --------- | ----------- | ------------- | ---------- | ----| ---- | -------- | ------ | ------- |
 | Ethernet1 | P2P_p3_Ethernet1 | - | 10.255.3.22/31 | default | 1500 | False | - | - |
-| Ethernet2 | C1_L3_SERVICE | - | 10.0.1.9/30 | C1_VRF1 | - | False | - | - |
 | Ethernet3 | P2P_p4_Ethernet3 | - | 10.255.3.24/31 | default | 1500 | False | - | - |
-| Ethernet4 | C2_L3_SERVICE | - | 10.1.1.9/30 | C2_VRF1 | - | False | - | - |
 
 ##### ISIS
 
@@ -213,14 +210,6 @@ interface Ethernet1
    isis authentication mode md5
    isis authentication key 7 <removed>
 !
-interface Ethernet2
-   description C1_L3_SERVICE
-   no shutdown
-   no switchport
-   vrf C1_VRF1
-   ip address 10.0.1.9/30
-   ip ospf area 0.0.0.0
-!
 interface Ethernet3
    description P2P_p4_Ethernet3
    no shutdown
@@ -237,13 +226,6 @@ interface Ethernet3
    isis network point-to-point
    isis authentication mode md5
    isis authentication key 7 <removed>
-!
-interface Ethernet4
-   description C2_L3_SERVICE
-   no shutdown
-   no switchport
-   vrf C2_VRF1
-   ip address 10.1.1.9/30
 ```
 
 ### Loopback Interfaces
@@ -312,8 +294,6 @@ ip virtual-router mac-address 00:1c:73:00:dc:00
 | VRF | Routing Enabled |
 | --- | --------------- |
 | default | True |
-| C1_VRF1 | True |
-| C2_VRF1 | True |
 | MGMT | False |
 
 #### IP Routing Device Configuration
@@ -321,8 +301,6 @@ ip virtual-router mac-address 00:1c:73:00:dc:00
 ```eos
 !
 ip routing
-ip routing vrf C1_VRF1
-ip routing vrf C2_VRF1
 no ip routing vrf MGMT
 ```
 
@@ -333,8 +311,6 @@ no ip routing vrf MGMT
 | VRF | Routing Enabled |
 | --- | --------------- |
 | default | False |
-| C1_VRF1 | false |
-| C2_VRF1 | false |
 | MGMT | false |
 
 ### Static Routes
@@ -350,37 +326,6 @@ no ip routing vrf MGMT
 ```eos
 !
 ip route vrf MGMT 0.0.0.0/0 172.16.1.1
-```
-
-### Router OSPF
-
-#### Router OSPF Summary
-
-| Process ID | Router ID | Default Passive Interface | No Passive Interface | BFD | Max LSA | Default Information Originate | Log Adjacency Changes Detail | Auto Cost Reference Bandwidth | Maximum Paths | MPLS LDP Sync Default | Distribute List In |
-| ---------- | --------- | ------------------------- | -------------------- | --- | ------- | ----------------------------- | ---------------------------- | ----------------------------- | ------------- | --------------------- | ------------------ |
-| 10 | 10.255.1.3 | enabled | Ethernet2 <br> | disabled | default | disabled | disabled | - | - | - | - |
-
-#### Router OSPF Router Redistribution
-
-| Process ID | Source Protocol | Include Leaked | Route Map |
-| ---------- | --------------- | -------------- | --------- |
-| 10 | bgp | disabled | - |
-
-#### OSPF Interfaces
-
-| Interface | Area | Cost | Point To Point |
-| -------- | -------- | -------- | -------- |
-| Ethernet2 | 0.0.0.0 | - | False |
-
-#### Router OSPF Device Configuration
-
-```eos
-!
-router ospf 10 vrf C1_VRF1
-   router-id 10.255.1.3
-   passive-interface default
-   no passive-interface Ethernet2
-   redistribute bgp
 ```
 
 ### Router ISIS
@@ -462,7 +407,6 @@ ASN Notation: asplain
 | -------- | --------- | --- | -------- | -------------- | -------------- | ---------- | --- | --------------------- | ---------------------- | ------- | ------------ |
 | 10.255.2.1 | Inherited from peer group MPLS-OVERLAY-PEERS | default | - | Inherited from peer group MPLS-OVERLAY-PEERS | Inherited from peer group MPLS-OVERLAY-PEERS | - | Inherited from peer group MPLS-OVERLAY-PEERS | - | - | - | - |
 | 10.255.2.2 | Inherited from peer group MPLS-OVERLAY-PEERS | default | - | Inherited from peer group MPLS-OVERLAY-PEERS | Inherited from peer group MPLS-OVERLAY-PEERS | - | Inherited from peer group MPLS-OVERLAY-PEERS | - | - | - | - |
-| 10.1.1.10 | 65124 | C2_VRF1 | - | standard | 100 | - | - | - | - | - | - |
 
 #### Router BGP VPN-IPv4 Address Family
 
@@ -471,13 +415,6 @@ ASN Notation: asplain
 | Peer Group | Activate | Route-map In | Route-map Out | RCF In | RCF Out |
 | ---------- | -------- | ------------ | ------------- | ------ | ------- |
 | MPLS-OVERLAY-PEERS | True | - | - | - | - |
-
-#### Router BGP VRFs
-
-| VRF | Route-Distinguisher | Redistribute | Graceful Restart |
-| --- | ------------------- | ------------ | ---------------- |
-| C1_VRF1 | 10.255.1.3:10 | connected<br>ospf | - |
-| C2_VRF1 | 10.255.1.3:20 | connected | - |
 
 #### Router BGP Device Configuration
 
@@ -506,28 +443,6 @@ router bgp 65001
    address-family vpn-ipv4
       neighbor MPLS-OVERLAY-PEERS activate
       neighbor default encapsulation mpls next-hop-self source-interface Loopback0
-   !
-   vrf C1_VRF1
-      rd 10.255.1.3:10
-      route-target import vpn-ipv4 10:10
-      route-target export vpn-ipv4 10:10
-      router-id 10.255.1.3
-      redistribute connected
-      redistribute ospf
-   !
-   vrf C2_VRF1
-      rd 10.255.1.3:20
-      route-target import vpn-ipv4 20:20
-      route-target export vpn-ipv4 20:20
-      router-id 10.255.1.3
-      neighbor 10.1.1.10 remote-as 65124
-      neighbor 10.1.1.10 description C2_ROUTER2
-      neighbor 10.1.1.10 send-community standard
-      neighbor 10.1.1.10 maximum-routes 100
-      redistribute connected
-      !
-      address-family ipv4
-         neighbor 10.1.1.10 activate
 ```
 
 ## BFD
@@ -604,17 +519,11 @@ mpls ldp
 
 | VRF Name | IP Routing |
 | -------- | ---------- |
-| C1_VRF1 | enabled |
-| C2_VRF1 | enabled |
 | MGMT | disabled |
 
 ### VRF Instances Device Configuration
 
 ```eos
-!
-vrf instance C1_VRF1
-!
-vrf instance C2_VRF1
 !
 vrf instance MGMT
 ```
